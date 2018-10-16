@@ -13,12 +13,20 @@ import csv
 import traceback
 from itertools import izip
 from bs4 import BeautifulSoup
+import paho.mqtt.client as mqtt
 
 COOKIE = ""
 TARGET_URL = "https://ghrc.nsstc.nasa.gov/pub/lis/iss/data/science/nrt/nc/2018/1016/"
 SAVE_DIR = "./data/"
-CSV_FILE = "./flashloc_test.csv"
+CSV_FILE = "./data/flashloc_test.csv"
+MQTT_END_POINT = "lis/nrt/geo"
 
+def publishdata(lat, lon):
+    client = mqtt.Client(protocol=mqtt.MQTTv311)
+    client.connect("MQTT server host", port=1883, keepalive=30)
+    for lt, ln in izip(lat, lon):
+        client.publish(MQTT_END_POINT, str(ln) + "," + str(lt))
+    client.disconnect()
 
 def getncdata(file):
     files = glob.glob(SAVE_DIR + file)
@@ -38,7 +46,8 @@ def getncdata(file):
             writer = csv.writer(myfile)
             writer.writerows(izip(flash_lat,flash_lon)) #Define data rows (izip creates columns)
 
-        # send to MQTT server
+        # publish with mqtt
+        publishdata(flash_lat, flash_lon)
 
     except:
         traceback.print_exc()
