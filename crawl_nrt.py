@@ -16,22 +16,22 @@ from bs4 import BeautifulSoup
 import paho.mqtt.client as mqtt
 
 COOKIE = ""
-TARGET_URL = "https://ghrc.nsstc.nasa.gov/pub/lis/iss/data/science/nrt/nc/2018/1016/"
+TARGET_URL = "https://ghrc.nsstc.nasa.gov/pub/lis/iss/data/science/nqc/nc/2018/0805/"
+
 SAVE_DIR = "./data/"
 CSV_FILE = "./data/flashloc_test.csv"
+MQTT_SERVER = "MQTT SERVER"
 MQTT_END_POINT = "lis/nrt/geo"
 MQTT_END_POINT_CNT = "lis/nrt/cnt"
 
 def publishdata(lat, lon):
     client = mqtt.Client(protocol=mqtt.MQTTv311)
-    client.connect("MQTT server host", port=1883, keepalive=30)
-
+    client.connect(MQTT_SERVER, port=1883, keepalive=30)
     loop_cnt = 0
     for lt, ln in izip(lat, lon):
         client.publish(MQTT_END_POINT, str(lt) + "," + str(ln))
         loop_cnt += 1
     client.publish(MQTT_END_POINT_CNT, str(loop_cnt))
-
     client.disconnect()
 
 def getncdata(file):
@@ -60,9 +60,14 @@ def getncdata(file):
 
 
 def crawlnc(file):
+    global TARGET_URL
+
     if os.path.exists(SAVE_DIR + file) == False:
         opener = urllib2.build_opener()
         opener.addheaders.append(('Cookie', COOKIE))
+
+        print TARGET_URL + file
+
         r = opener.open(TARGET_URL + file)
         f = open(SAVE_DIR + file, "wb")
         f.write(r.read())
@@ -72,6 +77,16 @@ def crawlnc(file):
         getncdata(file)
     
 def main():
+    global TARGET_URL
+    argv = sys.argv
+    argc = len(argv)
+    if (argc != 2):
+        print 'Usage: python %s arg1 ' %argv[0]
+        quit()
+
+    TARGET_URL = argv[1]
+    print TARGET_URL 
+
     opener = urllib2.build_opener()
     opener.addheaders.append(('Cookie', COOKIE))
     f = opener.open(TARGET_URL)
